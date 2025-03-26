@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>DM Panel - Joueur</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        #fog {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+            background-color: transparent;
+            pointer-events: none;
+        }
+        #container {
+            position: relative;
+            display: inline-block;
+        }
+        img {
+            display: block;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vue Joueur</h1>
+    <div class="section" style="display: flex; flex-direction: column; align-items: center;">
+        <div id="container">
+            <div style="position: relative; display: inline-block;">
+<img id="player-image" style="max-height: 90vh; max-width: 100%; width: auto; height: auto; display: block;">
+<canvas id="fog-canvas" style="position: absolute; top: 0; left: 0;"></canvas>
+</div>
+            <canvas id="fog" style="display:none;"></canvas>
+        </div>
+    </div>
+
+    
+
+
+
+
+
+
+
+<div style="position: relative; display: flex; justify-content: center;">
+    <img id="player-image" style="max-height: 90vh; max-width: 100%; width: auto; height: auto; display: block;">
+    <canvas id="fog-canvas" style="position: absolute; top: 0; left: 0;"></canvas>
+</div>
+
+
+
+<script>
+const ws = new WebSocket("ws://" + location.host + "/ws");
+
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "image") {
+        const img = document.getElementById("player-image");
+        const canvas = document.getElementById("fog-canvas");
+        if (img && data.payload) {
+            img.src = "/static/images/" + encodeURIComponent(data.payload);
+            if (canvas) {
+                const ctx = canvas.getContext("2d");
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+    }
+};
+</script>
+
+</body>
+</html>
+
+
+
+
+
+

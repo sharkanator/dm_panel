@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>DM Panel - MJ</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .tile {
+            display: inline-block;
+            background-color: #222;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+            text-align: center;
+            width: 200px;
+        }
+        .tile img {
+            max-width: 100%;
+            border-radius: 6px;
+        }
+        .tile button {
+            margin-top: 5px;
+            margin-right: 5px;
+        }
+        #tiles-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        #preview-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        #fog-editor {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: transparent;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vue MJ</h1>
+
+    <div class="section" style="display: flex; flex-direction: column; align-items: center;">
+        <h2>Image actuelle</h2>
+
+<div class="image-preview-container" style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
+    <img id="current-image" style="max-height: 70vh; max-width: 100%; width: auto; height: auto; display: block;" />
+</div>
+
+        <div id="preview-container">
+            <img id="current-image" style="max-height: 70vh; max-width: 100%; width: auto; height: auto; display: block;" />
+            <canvas id="fog-editor" style="display:none;"></canvas>
+        </div>
+
+        
+        <div style="margin-top: 10px;">
+            <button onclick="clearFog()">Effacer tout le brouillard</button><br><br>
+        
+            <label><input type="radio" name="mode" value="reveal" checked> Révéler</label>
+            <label><input type="radio" name="mode" value="hide"> Masquer</label>
+            &nbsp; | &nbsp;
+            <label><input type="radio" name="brush" value="15"> Petit</label>
+            <label><input type="radio" name="brush" value="30" checked> Moyen</label>
+            <label><input type="radio" name="brush" value="60"> Grand</label>
+        </div>
+    </div>
+
+    <div class="section" style="display: flex; flex-direction: column; align-items: center;">
+        <h2>Galerie des images</h2>
+        <div id="drop-zone" style="border: 3px dashed #999; padding: 30px; text-align: center; margin: 20px 0; border-radius: 10px; font-size: 1.2em; background-color: #1c1c1c;">
+    📁 Glissez-déposez une image ici pour l’ajouter à la galerie
+</div>
+<div id="tiles-container"></div>
+    </div>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+function updateCurrentImage() {
+    fetch('/api/image')
+        .then(res => res.json())
+        .then(data => {
+            const img = document.getElementById("current-image");
+            if (img && data.filename) {
+                const encoded = encodeURIComponent(data.filename);
+                img.src = `/static/images/${encoded}`;
+            }
+        });
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    
+});
+</script>
+
+
+<script>
+let ws;
+window.addEventListener("DOMContentLoaded", () => {
+    ws = new WebSocket("ws://" + location.host + "/ws");
+});
+
+function showImage(filename) {
+    fetch('/api/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: filename, fog_enabled: false })
+    }).then(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "image", payload: filename }));
+            document.getElementById("current-image").src = "/static/images/" + encodeURIComponent(filename);
+        }
+    });
+}
+
+function showWithFog(filename) {
+    fetch('/api/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: filename, fog_enabled: true })
+    }).then(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "image", payload: filename }));
+            document.getElementById("current-image").src = "/static/images/" + encodeURIComponent(filename);
+        }
+    });
+}
+</script>
+
+
+<script>
+async function fetchImages() {
+    try {
+        const response = await fetch('/api/images');
+        const data = await response.json();
+
+        const container = document.getElementById('tiles-container');
+        container.innerHTML = '';
+        data.forEach(filename => {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            tile.innerHTML = `
+                <img src="/static/images/${encodeURIComponent(filename)}" style="max-width: 100px; border-radius: 5px;"><br>
+                <button onclick="showImage('${filename}')">👁️</button>
+                <button onclick="showWithFog('${filename}')">🌫️</button>
+            `;
+            container.appendChild(tile);
+        });
+    } catch (err) {
+        console.error("Erreur fetchImages:", err);
+    }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    fetchImages();
+});
+</script>
+
+</body>
+</html>
